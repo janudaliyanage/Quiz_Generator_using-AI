@@ -22,14 +22,18 @@ public class QuizService {
     public String createQuizFromText(String content) {
         RestTemplate restTemplate = new RestTemplate();
 
-        // The "Final Form" Prompt: Mixed difficulty, full coverage, deep explanations
-        String prompt = "Step 1: Perform a deep analysis of the provided PDF content. " +
-                "Step 2: Generate a QUIZ that covers ALL the content in the PDF. " +
-                "Step 3: The Quizes must be MIXED (from very hard technical quizzes to easy conceptual quizzes). " +
-                "Ensure you include questions on datatypes, logic flows, and specific code functions. " +
-                "For every answer, provide a high-quality explanation. " +
-                "Return ONLY a JSON array with keys: 'question', 'options' (array of 4 strings), 'correctAnswer' (integer 0-3), 'explanation'. " +
-                "Content to analyze: " + content;
+        // THE "HARDCORE" PROMPT
+        String prompt = "Act as a Senior University Examiner. Analyze this text and generate 20 'Exam-Level' Multiple Choice Questions. " +
+                "CRITICAL INSTRUCTIONS: " +
+                "1. AVOID simple definitions (e.g., 'What is IP?'). " +
+                "2. FOCUS on 'Application' and 'Analysis' levels: " +
+                "   - Code Debugging: Give a snippet and ask what's wrong. " +
+                "   - Scenarios: 'A client fails to connect with Error X. What is the cause?' " +
+                "   - Trade-offs: 'Why use Function A over Function B in this specific case?' " +
+                "3. DISTRACTORS: The wrong answers must be technically plausible to test deep understanding. " +
+                "4. EXPLANATIONS: Must be detailed technical breakdowns. " +
+                "Return ONLY a JSON array with keys: 'question', 'options' (4 strings), 'correctAnswer' (0-3), 'explanation'. " +
+                "Content: " + content;
 
         Map<String, Object> part = new HashMap<>();
         part.put("text", prompt);
@@ -49,14 +53,12 @@ public class QuizService {
         try {
             Map response = restTemplate.postForObject(fullUrl, request, Map.class);
 
-            // Safe digging to get the text
             List candidates = (List) response.get("candidates");
             Map firstCandidate = (Map) candidates.get(0);
             Map contentObj = (Map) firstCandidate.get("content");
             List parts = (List) contentObj.get("parts");
             String rawJson = (String) ((Map)parts.get(0)).get("text");
 
-            // Clean up Markdown if the AI adds it
             return rawJson.replace("```json", "").replace("```", "").trim();
 
         } catch (Exception e) {
